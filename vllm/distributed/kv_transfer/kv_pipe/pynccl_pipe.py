@@ -155,6 +155,7 @@ class PyNcclPipe(KVPipeBase):
             - metadata: A dictionary with keys "dtype" and "shape".
         """
         self.group.send_obj(metadata, self.target_rank_for_send)
+        print(f"Sent metadata: {metadata}")
 
     def _recv_metadata(self) -> Metadata:
         """
@@ -190,10 +191,13 @@ class PyNcclPipe(KVPipeBase):
             - buffer: The received tensor, or None if no tensor is received.
         """
         metadata = self._recv_metadata()
+        print(f"Received metadata: {metadata}")
         if metadata["dtype"] is None:
             return None
         buffer = self._prepare_recv_buffer(metadata)
+        print(f"[rank{self.kv_rank}]: Prepared buffer with shape {buffer.shape} and dtype {buffer.dtype}.")
         self.device_recv_func(buffer, self.target_rank_for_recv)
+        print(f"[rank{self.kv_rank}]: Received tensor with shape {buffer.shape} and dtype {buffer.dtype}.")
 
         return buffer
 
@@ -207,6 +211,7 @@ class PyNcclPipe(KVPipeBase):
 
             with self.buffer_size_lock:
                 self.buffer_size -= tensor_size
+                print(f"[rank{self.kv_rank}]: Updated buffer size to {self.buffer_size}.")
         except Exception as e:
             logger.error("[rank%d]: Exception when trying to send %s, msg: %s",
                          torch.distributed.get_rank(), str(tensor), str(e))

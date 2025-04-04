@@ -33,12 +33,12 @@ def run_prefill(prefill_done):
     # The number of parallel instances for KV cache transfer is set to 2,
     # as required for PyNcclConnector.
     ktc = KVTransferConfig.from_cli(
-        '{"kv_connector":"PyNcclConnector","kv_role":"kv_producer","kv_rank":0,"kv_parallel_size":2}'
+        '{"kv_connector":"PyNcclConnector","kv_role":"kv_producer","kv_rank":0,"kv_parallel_size":2,"kv_ip":"localhost","kv_port":12345}'
     )
 
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
-    llm = LLM(model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+    llm = LLM(model="meta-llama/Llama-3.2-3B-Instruct",
               kv_transfer_config=ktc,
               max_model_len=2000,
               gpu_memory_utilization=0.8)
@@ -72,12 +72,12 @@ def run_decode(prefill_done):
     # The number of parallel instances for KV cache transfer is set to 2,
     # as required for PyNcclConnector.
     ktc = KVTransferConfig.from_cli(
-        '{"kv_connector":"PyNcclConnector","kv_role":"kv_consumer","kv_rank":1,"kv_parallel_size":2}'
+        '{"kv_connector":"PyNcclConnector","kv_role":"kv_consumer","kv_rank":1,"kv_parallel_size":2,"kv_ip":"localhost","kv_port":12345}'
     )
 
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
-    llm = LLM(model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+    llm = LLM(model="meta-llama/Llama-3.2-3B-Instruct",
               kv_transfer_config=ktc,
               max_model_len=2000,
               gpu_memory_utilization=0.8)

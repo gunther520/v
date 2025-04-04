@@ -121,7 +121,7 @@ class SimpleBuffer(KVLookupBufferBase):
             if self.buffer_size + data_size > self.buffer_size_threshold:
                 # log outside the while loop to avoid this message being logged
                 # repeatedly.
-                logger.debug("KV transfer buffer is full. Handling...")
+                print("KV transfer buffer is full. Handling...")
                 while self.buffer_size + data_size > self.buffer_size_threshold:
                     self.buffer_cv.wait()
 
@@ -139,15 +139,16 @@ class SimpleBuffer(KVLookupBufferBase):
             while True:
                 signal = self.signal_pipe.recv_tensor()
                 if self._is_end_signal(signal):
-                    logger.info("Received end signal!")
+                    print("Received end signal!")
                     break
 
                 input_tokens = self.data_pipe.recv_tensor()
-
+                print(f"Received input_tokens.")
                 roi = self.data_pipe.recv_tensor()
                 assert roi is not None, "Please provide the roi when sending "\
                     "drop-select request"
                 roi = (roi > 0.5)
+                print(f"Received roi.")
                 tokens_roi_recver = [input_tokens, roi]
 
                 def is_buffer_available(
@@ -157,11 +158,17 @@ class SimpleBuffer(KVLookupBufferBase):
                     # but this buffer size won't (and shouldn't) be too large so
                     # the fix is not urgent.
                     for _ in range(len(self.buffer)):
-                        if self._matches(self.buffer[0],
-                                         tokens_roi_recver) > 0:
+                        tt= self._matches(self.buffer[0],
+                                         tokens_roi_recver)
+                        if  tt> 0:
+                            print(tt)
+
+                            print("find match successfully")
+
                             return True
                         # rotate the element we just accessed to the end
                         self.buffer.rotate(-1)
+                    print("find match failed buffer size is ", len(self.buffer))
                     return False
 
                 with self.buffer_cv:
@@ -195,27 +202,37 @@ class SimpleBuffer(KVLookupBufferBase):
         if isinstance(roi, torch.Tensor):
             roi = roi.clone().float()
 
+        my_rank = torch.distributed.get_rank()
         self.signal_pipe.send_tensor(self.normal_signal)
+        print(f"[rank{my_rank}]: Sent normal signal.")
         self.data_pipe.send_tensor(input_tokens)
+        print(f"[rank{my_rank}]: Sent input_tokens.")
         self.data_pipe.send_tensor(roi)
+        print(f"[rank{my_rank}]: Sent roi.")
 
         input_tokens = self.data_pipe.recv_tensor()
+        print(f"[rank{my_rank}]: Received input_tokens.")
         roi = self.data_pipe.recv_tensor()
         if roi is not None:
             # convert from float tensor to bool tensor
             # as PyNccl does not support sending bool tensor
             roi = (roi > 0.5)
+        print(f"[rank{my_rank}]: Received roi.")
         key = self.data_pipe.recv_tensor()
+        print(f"[rank{my_rank}]: Received key.")
         value = self.data_pipe.recv_tensor()
+        print(f"[rank{my_rank}]: Received value.")
         hidden = self.data_pipe.recv_tensor()
+        print(f"[rank{my_rank}]: Received hidden.")
 
         return [input_tokens, roi, key, value, hidden]
 
     def insert(self, input_tokens: torch.Tensor, roi: torch.Tensor,
                key: torch.Tensor, value: torch.Tensor,
                hidden: torch.Tensor) -> None:
-
+        print("Inserting...")
         self._add_to_buffer(input_tokens, roi, key, value, hidden)
+        print("Inserted")
 
         # when calling the insert, the current process is a sender
         # need to launch the request handler and start listening to request.

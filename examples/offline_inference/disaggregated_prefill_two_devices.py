@@ -165,7 +165,8 @@ def run_prefill(ip_address="localhost"):
 
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
-    llm = LLM(model="meta-llama/Llama-3.2-3B-Instruct",
+    llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
+              model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
               kv_transfer_config=ktc,
               max_model_len=2000,
               gpu_memory_utilization=0.8)
@@ -205,7 +206,8 @@ def run_decode(ip_address="localhost"):
 
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
-    llm = LLM(model="meta-llama/Llama-3.2-3B-Instruct",
+    llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
+              model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
               kv_transfer_config=ktc,
               max_model_len=2000,
               gpu_memory_utilization=0.8)

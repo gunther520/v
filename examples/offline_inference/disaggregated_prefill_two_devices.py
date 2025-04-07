@@ -154,7 +154,7 @@ def run_prefill(ip_address="localhost"):
         "Hello, my name is",
         "Hi, your name is",
         # The decode node will actually "prefill" this request.
-        "Tell me a very long story",
+        "Tell me a very long story"*100,
     ]
     sampling_params = SamplingParams(temperature=0, top_p=0.95, max_tokens=1)
 
@@ -168,7 +168,7 @@ def run_prefill(ip_address="localhost"):
     llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
               model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
               kv_transfer_config=ktc,
-              max_model_len=2000,
+              max_model_len=20000,
               gpu_memory_utilization=0.8)
 
     llm.generate(prompts, sampling_params)
@@ -195,7 +195,7 @@ def run_decode(ip_address="localhost"):
     prompts = [
         "Hello, my name is",
         "Hi, your name is",
-        "Tell me a very long story",
+        "Tell me a very long story"*100,
     ]
     sampling_params = SamplingParams(temperature=0, top_p=0.95)
 
@@ -209,7 +209,7 @@ def run_decode(ip_address="localhost"):
     llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
               model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
               kv_transfer_config=ktc,
-              max_model_len=2000,
+              max_model_len=20000,
               gpu_memory_utilization=0.8)
 
     print("Initialized LLM on decode node, now waiting for prefill to complete...")

@@ -694,6 +694,8 @@ class SequenceGroup:
 
         self.cached_request_output = None
 
+        self.itl=[]
+
     @property
     def prompt(self) -> Optional[str]:
         return self.first_seq.prompt

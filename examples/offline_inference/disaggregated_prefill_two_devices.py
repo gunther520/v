@@ -16,8 +16,18 @@ import sys
 from vllm import LLM, SamplingParams
 from vllm.config import KVTransferConfig
 
+from datasets import load_dataset
+
+# Load the dataset with streaming enabled
+dataset = load_dataset("json",data_files="/home/hkngae/test/temp_dataset/output.json", split="train",)
+dataset = list(dataset)
+extracted_values = [record["conversations"][0]["value"] for record in dataset]
+prompt_len=320
+prompts = extracted_values[:prompt_len]
 # Port for synchronization signal (different from KV transfer port)
 SYNC_PORT = 12347
+
+
 
 def start_signal_server(ip_address="localhost"):
     """Starts a simple socket server to signal when prefill is done."""
@@ -142,7 +152,7 @@ def send_completion_signal(ip_address):
 
 def run_prefill(ip_address="localhost"):
     # We use GPU 0 for prefill node.
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
 
     # Start signal server in a separate thread
     send_done_signal = start_signal_server(ip_address)
@@ -150,12 +160,6 @@ def run_prefill(ip_address="localhost"):
     # Start listener for completion signal
     completion_flag = start_completion_listener(ip_address)
 
-    prompts = [
-        "Hello, my name is",
-        "Hi, your name is",
-        # The decode node will actually "prefill" this request.
-        "Tell me a very long story"*100,
-    ]
     sampling_params = SamplingParams(temperature=0, top_p=0.95, max_tokens=1)
 
     # Using PyNcclConnector to transmit KV caches between vLLM instances.
@@ -166,10 +170,13 @@ def run_prefill(ip_address="localhost"):
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
     llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
-              model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
+              #model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
+              model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659",
               kv_transfer_config=ktc,
-              max_model_len=20000,
-              gpu_memory_utilization=0.8)
+              max_model_len=700,
+              gpu_memory_utilization=0.95,
+              max_num_seqs=80,
+              )
 
     llm.generate(prompts, sampling_params)
     print("Prefill node is finished.")
@@ -190,13 +197,8 @@ def run_prefill(ip_address="localhost"):
 
 def run_decode(ip_address="localhost"):
     # We use GPU 0 on the decode node (since it's a different machine)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # Using GPU 0 since this is on a different machine
+    os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # Using GPU 0 since this is on a different machine
 
-    prompts = [
-        "Hello, my name is",
-        "Hi, your name is",
-        "Tell me a very long story"*100,
-    ]
     sampling_params = SamplingParams(temperature=0, top_p=0.95)
 
     # Using PyNcclConnector to transmit KV caches between vLLM instances.
@@ -207,10 +209,14 @@ def run_decode(ip_address="localhost"):
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
     llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
-              model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
+              #model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.2-3B-Instruct/snapshots/0cb88a4f764b7a12671c53f0838cd831a0843b95",
+              model="/home/hkngae/.cache/huggingface/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659",
               kv_transfer_config=ktc,
-              max_model_len=20000,
-              gpu_memory_utilization=0.8)
+              max_model_len=700,
+              gpu_memory_utilization=0.95,
+              max_num_seqs=80,
+              disable_log_stats=False,
+              )
 
     print("Initialized LLM on decode node, now waiting for prefill to complete...")
     

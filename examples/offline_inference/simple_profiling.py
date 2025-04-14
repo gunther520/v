@@ -10,26 +10,24 @@ os.environ["VLLM_TORCH_PROFILER_DIR"] = "./vllm_profile"
 
 # Sample prompts.
 prompts = [
-    "Hello, my name is",
-    "The president of the United States is",
-    "The capital of France is",
-    "The future of AI is",
+    "yo, my name is",
+    "The flag of France is",
+    "The food of China is",
+    "The meaning of education is",
 ]
 # Create a sampling params object.
-sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+sampling_params = SamplingParams(temperature=0.8, top_p=0.95, )
 
 if __name__ == "__main__":
-
+    os.environ["VLLM_USE_V1"] = "0"
     # Create an LLM.
-    llm = LLM(model="facebook/opt-125m", tensor_parallel_size=1)
+    llm = LLM(model="meta-llama/Llama-3.2-3B-Instruct", tensor_parallel_size=1,max_model_len=2000,disable_log_stats=False,kv_transfer_config=None)
 
-    llm.start_profile()
 
     # Generate texts from the prompts. The output is a list of RequestOutput
     # objects that contain the prompt, generated text, and other information.
     outputs = llm.generate(prompts, sampling_params)
 
-    llm.stop_profile()
 
     # Print the outputs.
     for output in outputs:

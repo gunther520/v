@@ -11,12 +11,13 @@ from multiprocessing import Event, Process
 from vllm import LLM, SamplingParams
 from vllm.config import KVTransferConfig
 from datasets import load_dataset
+import nvtx
 
 # Load the dataset with streaming enabled
 dataset = load_dataset("json",data_files="/home/hkngae/test/temp_dataset/output.json", split="train",)
 dataset = list(dataset)
 extracted_values = [record["conversations"][0]["value"] for record in dataset]
-prompt_len=320
+prompt_len=20
 prompts = extracted_values[:prompt_len]
 
 
@@ -48,8 +49,9 @@ def run_prefill(prefill_done):
               gpu_memory_utilization=0.95,
               max_num_seqs=40,
               )
-
+    nvtx.push_range("prefill", color="green")
     llm.generate(prompts, sampling_params)
+    nvtx.pop_range()
     print("Prefill node is finished.")
     prefill_done.set()
 
@@ -92,7 +94,9 @@ def run_decode(prefill_done):
 
     # At this point when the prefill_done is set, the kv-cache should have been
     # transferred to this decode node, so we can start decoding.
+    nvtx.push_range("decode", color="red")
     outputs = llm.generate(prompts, sampling_params)
+    nvtx.pop_range()
     for output in outputs:
         prompt = output.prompt
         generated_text = output.outputs[0].text

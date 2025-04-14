@@ -113,11 +113,11 @@ def run_simulation():
     # -------------------
 
     # CLI
-    info('\n*** Pausing for manual check. Use the Mininet CLI ***\n')
-    CLI(net)
+    #info('\n*** Pausing for manual check. Use the Mininet CLI ***\n')
+    #CLI(net)
 
     # pingAll
-    info('*** Continuing script after CLI. Testing network connectivity (pingAll)...\n')
+    #info('*** Continuing script after CLI. Testing network connectivity (pingAll)...\n')
     results = net.pingAll()
     if results > 0:
        info(f"*** pingAll test failed with {results*100:.1f}% loss.\n")

@@ -25,8 +25,9 @@ sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
 # this llm engine/instance only creates one worker.
 llm = LLM(
     model="facebook/opt-125m",
-    tensor_parallel_size=2,
-    distributed_executor_backend="external_launcher",
+    tensor_parallel_size=1,
+    disable_log_stats=False,
+    #distributed_executor_backend="external_launcher",
 )
 
 outputs = llm.generate(prompts, sampling_params)

@@ -237,6 +237,7 @@ class LLMEngine:
         self.prompt_adapter_config = vllm_config.prompt_adapter_config  # noqa
         self.observability_config = vllm_config.observability_config or ObservabilityConfig(  # noqa
         )
+        self.json_out="/home/hkngae/vllm/fypStats/local/stat_320.txt"
 
         logger.info(
             "Initializing a V0 LLM engine (v%s) with config: %s, "
@@ -1157,6 +1158,12 @@ class LLMEngine:
             seq_group.maybe_set_first_token_time(now)
             if not seq_group.is_prefill():
                 seq_group.set_last_token_time(now)
+                temp=seq_group.itl
+                itl=[temp[i]-temp[i-1] for i in range(1,len(temp))]
+                if len(itl)>0:
+                    with open(self.json_out, "a") as f:
+                        f.write("itl_"+str(seq_group.first_seq.seq_id)+":"+str(sum(itl)/len(itl))+"\n")
+                        f.close()
             request_output = RequestOutputFactory.create(
                 seq_group,
                 self.seq_id_to_seq_group,
@@ -1434,6 +1441,23 @@ class LLMEngine:
             try:
                 outputs = self.model_executor.execute_model(
                     execute_model_req=execute_model_req)
+                #if not in prefill check
+                now_t =time.time()
+                a=len(scheduler_outputs.scheduled_seq_groups)
+                bbbb=1
+                for i in range(a):
+                    if not scheduler_outputs.scheduled_seq_groups[i].seq_group.is_prefill():
+                        scheduler_outputs.scheduled_seq_groups[i].seq_group.itl.append(now_t)
+                        if scheduler_outputs.scheduled_seq_groups[i].seq_group.is_finished():
+                            #calculate itl
+                            temp=scheduler_outputs.scheduled_seq_groups[i].seq_group.itl
+                            itl=[temp[i]-temp[i-1] for i in range(1,len(temp))]
+                            if len(itl)>0:
+                                #write key value pair to file
+                                with open(self.json_out, "a") as f:
+                                    f.write("itl_"+str(scheduler_outputs.scheduled_seq_groups[i].seq_group.first_seq.seq_id)+":"+str(sum(itl)/len(itl))+"\n")
+                                    f.close()
+                        
                 self._skip_scheduling_next_step = False
             except InputProcessingError as e:
                 # The input for this request cannot be processed, so we must
@@ -1519,6 +1543,8 @@ class LLMEngine:
             # queued control plane messages, such as add/remove lora adapters.
             logger.debug("Stopping remote worker execution loop.")
             self.model_executor.stop_remote_worker_execution_loop()
+        
+
 
         return ctx.request_outputs
 
@@ -1846,6 +1872,11 @@ class LLMEngine:
                         for seq in seq_group.get_finished_seqs()
                     ])
 
+                    if time_per_output_tokens_iter:
+                        with open(self.json_out, "a") as f:
+                            f.write("tpot:" + str(time_per_output_tokens_iter) + "\n")
+                            f.close()
+
             # Number of generation tokens.
             #   num_batched_tokens equals the number of prompt_tokens plus the
             #   number of decode_tokens in a single iteration. So,
@@ -1864,6 +1895,12 @@ class LLMEngine:
             spec_decode_metrics = model_output[0].spec_decode_worker_metrics
         else:
             spec_decode_metrics = None
+
+        if time_to_first_tokens_iter:
+            #write to file
+            with open(self.json_out, "a") as f:
+                f.write("ttft:" + str(time_to_first_tokens_iter) + "\n")
+                f.close()
 
         return Stats(
             now=now,

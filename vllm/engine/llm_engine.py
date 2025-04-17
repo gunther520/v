@@ -237,7 +237,7 @@ class LLMEngine:
         self.prompt_adapter_config = vllm_config.prompt_adapter_config  # noqa
         self.observability_config = vllm_config.observability_config or ObservabilityConfig(  # noqa
         )
-        self.json_out="/home/hkngae/vllm/fypStats/local/stat_320.txt"
+        self.json_out="/home/hkngae/vllm/fypStats/remote_800MB/stat_160.txt"
 
         logger.info(
             "Initializing a V0 LLM engine (v%s) with config: %s, "
@@ -1452,11 +1452,11 @@ class LLMEngine:
                             #calculate itl
                             temp=scheduler_outputs.scheduled_seq_groups[i].seq_group.itl
                             itl=[temp[i]-temp[i-1] for i in range(1,len(temp))]
-                            if len(itl)>0:
+                            #if len(itl)>0:
                                 #write key value pair to file
-                                with open(self.json_out, "a") as f:
-                                    f.write("itl_"+str(scheduler_outputs.scheduled_seq_groups[i].seq_group.first_seq.seq_id)+":"+str(sum(itl)/len(itl))+"\n")
-                                    f.close()
+                                #with open(self.json_out, "a") as f:
+                                #    f.write("itl_"+str(scheduler_outputs.scheduled_seq_groups[i].seq_group.first_seq.seq_id)+":"+str(sum(itl)/len(itl))+"\n")
+                                #    f.close()
                         
                 self._skip_scheduling_next_step = False
             except InputProcessingError as e:

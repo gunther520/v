@@ -22,7 +22,7 @@ from datasets import load_dataset
 dataset = load_dataset("json",data_files="/home/hkngae/test/temp_dataset/output.json", split="train",)
 dataset = list(dataset)
 extracted_values = [record["conversations"][0]["value"] for record in dataset]
-prompt_len=320
+prompt_len=80
 prompts = extracted_values[:prompt_len]
 # Port for synchronization signal (different from KV transfer port)
 SYNC_PORT = 12347

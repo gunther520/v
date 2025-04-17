@@ -3,6 +3,7 @@
 
 # vllm-flash-attn built from source
 vllm/vllm_flash_attn/
+/fypStats
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

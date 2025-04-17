@@ -2,13 +2,14 @@ from mininet.net import Mininet
 # Ensure Controller is imported
 from mininet.node import Controller, OVSKernelSwitch
 from mininet.cli import CLI
+from mininet.link import TCLink
 from mininet.log import setLogLevel, info, error
 import time
 import sys
 import os
 
 ### usage
-#sudo /home/hkngae/anaconda3/envs/vllm/bin/python /home/hkngae/vllm/examples/offline_inference/script_mininet.py
+#sudo /home/hkngae/anaconda3/envs/vllm/bin/python /home/hkngae/vllm/examples/offline_inference/mininet_test.py
 
 # --- Set Log Level ---
 setLogLevel('debug')
@@ -35,7 +36,7 @@ def run_simulation():
     s1 = net.addSwitch('s1')
 
     info('*** Creating links\n')
-    net.addLink(h1, s1)
+    net.addLink(h1, s1,cls=TCLink,bw=4000)
     net.addLink(h2, s1)
 
     # DO NOT build manually
@@ -140,7 +141,7 @@ def run_simulation():
         h1.cmd(f'mkdir -p /tmp')
         h1.cmd(f'rm -f {server_log}')
 
-        server_cmd = (f'export NCCL_DEBUG=INFO; '
+        server_cmd = (f'export NCCL_DEBUG=DEBUG; '
                     f'export NCCL_SOCKET_IFNAME={h1_iface}; '
                     f'export HOST_IP={h1_ip}; '
                     f'export VLLM_HOST_IP={h1_ip}; '
@@ -170,7 +171,7 @@ def run_simulation():
         else:
             info("*** Server process appears to be running on h1.\n")
 
-        client_cmd = (f'export NCCL_DEBUG=INFO; '
+        client_cmd = (f'export NCCL_DEBUG=DEBUG; '
                     f'export NCCL_P2P_DISABLE=1; '
                     f'export NCCL_SHM_DISABLE=1; '
                     f'export NCCL_IB_DISABLE=1; '

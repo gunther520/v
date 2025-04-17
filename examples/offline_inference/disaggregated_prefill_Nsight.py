@@ -6,6 +6,7 @@ and then transfer the KV cache between them.
 """
 import os
 import time
+import argparse
 from multiprocessing import Event, Process
 
 from vllm import LLM, SamplingParams
@@ -17,9 +18,9 @@ import nvtx
 dataset = load_dataset("json",data_files="/home/hkngae/test/temp_dataset/output.json", split="train",)
 dataset = list(dataset)
 extracted_values = [record["conversations"][0]["value"] for record in dataset]
-prompt_len=20
+prompt_len=160
 prompts = extracted_values[:prompt_len]
-
+ip_address="10.0.0.1"
 
 
 def run_prefill(prefill_done):
@@ -37,7 +38,7 @@ def run_prefill(prefill_done):
     # The number of parallel instances for KV cache transfer is set to 2,
     # as required for PyNcclConnector.
     ktc = KVTransferConfig.from_cli(
-        '{"kv_connector":"PyNcclConnector","kv_role":"kv_producer","kv_rank":0,"kv_parallel_size":2,"kv_ip":"localhost","kv_port":12345}'
+        f'{{"kv_connector":"PyNcclConnector","kv_role":"kv_producer","kv_rank":0,"kv_parallel_size":2,"kv_ip":"{ip_address}","kv_port":12345}}'
     )
 
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
@@ -58,8 +59,8 @@ def run_prefill(prefill_done):
     # To keep the prefill node running in case the decode node is not done;
     # otherwise, the script might exit prematurely, causing incomplete decoding.
     try:
-        while True:
-            time.sleep(1)
+        
+        time.sleep(2400)
     except KeyboardInterrupt:
         print("Script stopped by user.")
 
@@ -75,9 +76,8 @@ def run_decode(prefill_done):
     # The number of parallel instances for KV cache transfer is set to 2,
     # as required for PyNcclConnector.
     ktc = KVTransferConfig.from_cli(
-        '{"kv_connector":"PyNcclConnector","kv_role":"kv_consumer","kv_rank":1,"kv_parallel_size":2,"kv_ip":"localhost","kv_port":12345}'
+            f'{{"kv_connector":"PyNcclConnector","kv_role":"kv_consumer","kv_rank":1,"kv_parallel_size":2,"kv_ip":"{ip_address}","kv_port":12345}}'
     )
-
     # Set GPU memory utilization to 0.8 for an A6000 GPU with 40GB
     # memory. You may need to adjust the value to fit your GPU.
     llm = LLM(#model="meta-llama/Llama-3.2-3B-Instruct",
@@ -104,16 +104,19 @@ def run_decode(prefill_done):
 
 
 if __name__ == "__main__":
-    prefill_done = Event()
-    prefill_process = Process(target=run_prefill, args=(prefill_done, ))
-    decode_process = Process(target=run_decode, args=(prefill_done, ))
-
-    # Start prefill node
-    prefill_process.start()
-
-    # Start decode node
-    decode_process.start()
-
-    # Terminate the prefill node when decode is finished
-    decode_process.join()
-    prefill_process.terminate()
+    parser = argparse.ArgumentParser(description="Run either prefill or decode")
+    parser.add_argument("--mode", type=str, required=True, choices=["prefill", "decode"], 
+                       help="Mode to run: prefill or decode")
+    args = parser.parse_args()
+    
+    # Create dummy event for compatibility with functions
+    dummy_event = Event()
+    
+    if args.mode == "prefill":
+        print("Running prefill mode directly...")
+        run_prefill(dummy_event)
+    elif args.mode == "decode":
+        print("Running decode mode directly...")
+        # For decode mode, set the event to simulate prefill completion
+        dummy_event.set()
+        run_decode(dummy_event)
